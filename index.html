@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Code Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fab fa-python"></i> Python Editor</h1>
+            </div>
+            <div class="header-controls">
+                <button id="newBtn" class="btn" title="New File (Ctrl+N)">
+                    <i class="fas fa-file"></i> New
+                </button>
+                <button id="saveBtn" class="btn" title="Save (Ctrl+S)">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button id="loadBtn" class="btn" title="Load">
+                    <i class="fas fa-folder-open"></i> Load
+                </button>
+                <input type="file" id="fileInput" accept=".py" style="display: none;">
+                <button id="runBtn" class="btn btn-primary" title="Run Code (Ctrl+Enter)">
+                    <i class="fas fa-play"></i> Run
+                </button>
+                <button id="themeBtn" class="btn" title="Toggle Theme">
+                    <i class="fas fa-palette"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Editor Panel -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <i class="fas fa-code"></i> Editor
+                    </span>
+                    <span class="file-name" id="fileName">untitled.py</span>
+                </div>
+                <div class="editor-container">
+                    <textarea id="codeEditor" placeholder="# Write your Python code here..."></textarea>
+                </div>
+            </div>
+
+            <!-- Resizer -->
+            <div class="resizer" id="resizer"></div>
+
+            <!-- Output Panel -->
+            <div class="output-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <i class="fas fa-terminal"></i> Output
+                    </span>
+                    <div class="output-controls">
+                        <button id="clearOutputBtn" class="btn-small" title="Clear Output">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="output-container">
+                    <div id="output" class="output-content"></div>
+                    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Running Python code...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="statusText">Ready</span>
+            <span class="status-right">
+                <span id="lineCol">Line 1, Column 1</span>
+                <span class="separator">|</span>
+                <span id="pyodideStatus">Loading Python...</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <h3>Initializing Python Environment</h3>
+            <p>Loading Pyodide... This may take a moment.</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    
+    <script src="python-runner.js"></script>
+    <script src="editor.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
