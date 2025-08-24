@@ -26,46 +26,88 @@ class PythonCodeEditor {
         const editorPanel = document.querySelector('.editor-panel');
         const outputPanel = document.querySelector('.output-panel');
         
+        // Add scroll buttons to panels
+        this.addScrollButtons();
+
         resizer.addEventListener('mousedown', (e) => {
             this.isResizing = true;
             this.lastX = e.clientX;
             resizer.classList.add('resizing');
-            document.body.style.cursor = 'col-resize';
-            
+
+            const isMobile = window.innerWidth <= 768;
+            document.body.style.cursor = isMobile ? 'row-resize' : 'col-resize';
+
             // Prevent text selection during resize
             document.body.style.userSelect = 'none';
-            
+            document.body.style.pointerEvents = 'none';
+
+            // Add overlay to prevent iframe interference
+            const overlay = document.createElement('div');
+            overlay.id = 'resize-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 9999;
+                cursor: ${isMobile ? 'row-resize' : 'col-resize'};
+            `;
+            document.body.appendChild(overlay);
+
             e.preventDefault();
         });
         
         document.addEventListener('mousemove', (e) => {
             if (!this.isResizing) return;
-            
+
             const container = document.querySelector('.main-content');
-            const containerWidth = container.offsetWidth;
-            const deltaX = e.clientX - this.lastX;
-            
-            // Get current widths
-            const editorWidth = editorPanel.offsetWidth;
-            const outputWidth = outputPanel.offsetWidth;
-            
-            // Calculate new widths
-            const newEditorWidth = editorWidth + deltaX;
-            const newOutputWidth = outputWidth - deltaX;
-            
-            // Set minimum widths
-            const minWidth = 250;
-            if (newEditorWidth >= minWidth && newOutputWidth >= minWidth) {
-                const editorFlex = (newEditorWidth / containerWidth) * 100;
-                const outputFlex = (newOutputWidth / containerWidth) * 100;
-                
-                editorPanel.style.flex = `0 0 ${editorFlex}%`;
-                outputPanel.style.flex = `0 0 ${outputFlex}%`;
-                
-                this.lastX = e.clientX;
-                
-                // Save layout
-                this.saveLayout(editorFlex, outputFlex);
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                // Handle vertical resizing for mobile
+                const containerHeight = container.offsetHeight;
+                const deltaY = e.clientY - this.lastX;
+
+                const editorHeight = editorPanel.offsetHeight;
+                const outputHeight = outputPanel.offsetHeight;
+
+                const newEditorHeight = editorHeight + deltaY;
+                const newOutputHeight = outputHeight - deltaY;
+
+                const minHeight = 200;
+                if (newEditorHeight >= minHeight && newOutputHeight >= minHeight) {
+                    const editorFlex = (newEditorHeight / containerHeight) * 100;
+                    const outputFlex = (newOutputHeight / containerHeight) * 100;
+
+                    editorPanel.style.flex = `0 0 ${editorFlex}%`;
+                    outputPanel.style.flex = `0 0 ${outputFlex}%`;
+
+                    this.lastX = e.clientY;
+                    this.saveLayout(editorFlex, outputFlex, true);
+                }
+            } else {
+                // Handle horizontal resizing for desktop
+                const containerWidth = container.offsetWidth;
+                const deltaX = e.clientX - this.lastX;
+
+                const editorWidth = editorPanel.offsetWidth;
+                const outputWidth = outputPanel.offsetWidth;
+
+                const newEditorWidth = editorWidth + deltaX;
+                const newOutputWidth = outputWidth - deltaX;
+
+                const minWidth = 280;
+                if (newEditorWidth >= minWidth && newOutputWidth >= minWidth) {
+                    const editorFlex = (newEditorWidth / containerWidth) * 100;
+                    const outputFlex = (newOutputWidth / containerWidth) * 100;
+
+                    editorPanel.style.flex = `0 0 ${editorFlex}%`;
+                    outputPanel.style.flex = `0 0 ${outputFlex}%`;
+
+                    this.lastX = e.clientX;
+                    this.saveLayout(editorFlex, outputFlex, false);
+                }
             }
         });
         
@@ -75,8 +117,89 @@ class PythonCodeEditor {
                 document.querySelector('#resizer').classList.remove('resizing');
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
+                document.body.style.pointerEvents = '';
+
+                // Remove resize overlay
+                const overlay = document.getElementById('resize-overlay');
+                if (overlay) {
+                    document.body.removeChild(overlay);
+                }
             }
         });
+    }
+    
+    addScrollButtons() {
+        // Add scroll buttons to editor
+        const editorContainer = document.querySelector('.editor-container');
+        this.addScrollButtonsToContainer(editorContainer, 'editor');
+
+        // Add scroll buttons to output
+        const outputContainer = document.querySelector('.output-container');
+        this.addScrollButtonsToContainer(outputContainer, 'output');
+    }
+
+    addScrollButtonsToContainer(container, type) {
+        // Top scroll button
+        const topBtn = document.createElement('button');
+        topBtn.className = 'scroll-btn scroll-btn-top';
+        topBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+        topBtn.title = 'Scroll to top';
+        topBtn.addEventListener('click', () => {
+            if (type === 'editor' && window.pythonEditor) {
+                window.pythonEditor.getEditor().scrollTo(0, 0);
+            } else if (type === 'output') {
+                const outputElement = document.getElementById('output');
+                outputElement.scrollTop = 0;
+            }
+        });
+
+        // Bottom scroll button
+        const bottomBtn = document.createElement('button');
+        bottomBtn.className = 'scroll-btn scroll-btn-bottom';
+        bottomBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+        bottomBtn.title = 'Scroll to bottom';
+        bottomBtn.addEventListener('click', () => {
+            if (type === 'editor' && window.pythonEditor) {
+                const editor = window.pythonEditor.getEditor();
+                const lastLine = editor.lastLine();
+                editor.scrollTo(0, editor.heightAtLine(lastLine, 'local'));
+            } else if (type === 'output') {
+                const outputElement = document.getElementById('output');
+                outputElement.scrollTop = outputElement.scrollHeight;
+            }
+        });
+
+        container.appendChild(topBtn);
+        container.appendChild(bottomBtn);
+
+        // Show/hide buttons based on scroll position
+        const scrollableElement = type === 'output' ? 
+            document.getElementById('output') : 
+            container.querySelector('.CodeMirror-scroll');
+
+        const updateButtonVisibility = () => {
+            if (type === 'editor' && window.pythonEditor) {
+                const editor = window.pythonEditor.getEditor();
+                const scrollInfo = editor.getScrollInfo();
+                topBtn.style.opacity = scrollInfo.top > 50 ? '0.8' : '0.3';
+                bottomBtn.style.opacity = 
+                    scrollInfo.top < (scrollInfo.height - scrollInfo.clientHeight - 50) ? '0.8' : '0.3';
+            } else if (type === 'output' && scrollableElement) {
+                const isAtTop = scrollableElement.scrollTop <= 50;
+                const isAtBottom = scrollableElement.scrollTop >= 
+                    (scrollableElement.scrollHeight - scrollableElement.clientHeight - 50);
+                topBtn.style.opacity = isAtTop ? '0.3' : '0.8';
+                bottomBtn.style.opacity = isAtBottom ? '0.3' : '0.8';
+            }
+        };
+
+        // Update visibility on scroll
+        if (scrollableElement) {
+            scrollableElement.addEventListener('scroll', updateButtonVisibility);
+        }
+
+        // Initial visibility check
+        setTimeout(updateButtonVisibility, 100);
     }
     
     setupEventListeners() {
@@ -206,27 +329,42 @@ class PythonCodeEditor {
         outputElement.scrollTop = outputElement.scrollHeight;
     }
     
-    saveLayout(editorFlex, outputFlex) {
+    saveLayout(editorFlex, outputFlex, isMobile = false) {
         try {
-            localStorage.setItem('editor_layout', JSON.stringify({
+            const layoutKey = isMobile ? 'editor_layout_mobile' : 'editor_layout_desktop';
+            localStorage.setItem(layoutKey, JSON.stringify({
                 editorFlex,
-                outputFlex
+                outputFlex,
+                timestamp: Date.now()
             }));
         } catch (e) {
             console.warn('Could not save layout:', e);
         }
     }
-    
+
     loadLayout() {
         try {
-            const savedLayout = localStorage.getItem('editor_layout');
+            const isMobile = window.innerWidth <= 768;
+            const layoutKey = isMobile ? 'editor_layout_mobile' : 'editor_layout_desktop';
+            const savedLayout = localStorage.getItem(layoutKey);
+
             if (savedLayout) {
                 const { editorFlex, outputFlex } = JSON.parse(savedLayout);
                 const editorPanel = document.querySelector('.editor-panel');
                 const outputPanel = document.querySelector('.output-panel');
-                
+
+                // Apply saved layout with smooth transition
+                editorPanel.style.transition = 'flex 0.3s ease';
+                outputPanel.style.transition = 'flex 0.3s ease';
+
                 editorPanel.style.flex = `0 0 ${editorFlex}%`;
                 outputPanel.style.flex = `0 0 ${outputFlex}%`;
+
+                // Remove transition after animation
+                setTimeout(() => {
+                    editorPanel.style.transition = '';
+                    outputPanel.style.transition = '';
+                }, 300);
             }
         } catch (e) {
             console.warn('Could not load layout:', e);
@@ -303,23 +441,49 @@ Start coding in the editor panel!
         const isMobile = window.innerWidth <= 768;
         const mainContent = document.querySelector('.main-content');
         const resizer = document.getElementById('resizer');
-        
+        const editorPanel = document.querySelector('.editor-panel');
+        const outputPanel = document.querySelector('.output-panel');
+
+        // Add smooth transition for layout changes
+        mainContent.style.transition = 'all 0.3s ease';
+
         if (isMobile) {
             mainContent.style.flexDirection = 'column';
-            resizer.style.width = '100%';
-            resizer.style.height = '4px';
+            // Reset flex for mobile layout
+            editorPanel.style.flex = '1';
+            outputPanel.style.flex = '0 0 280px';
         } else {
             mainContent.style.flexDirection = 'row';
-            resizer.style.width = '4px';
-            resizer.style.height = '100%';
+            // Load appropriate layout
+            this.loadLayout();
         }
-        
+
+        // Remove transition after animation
+        setTimeout(() => {
+            mainContent.style.transition = '';
+        }, 300);
+
         // Refresh editor after layout change
         if (window.pythonEditor && window.pythonEditor.getEditor()) {
             setTimeout(() => {
                 window.pythonEditor.getEditor().refresh();
-            }, 100);
+            }, 150);
         }
+
+        // Update scroll button visibility
+        setTimeout(() => {
+            const scrollButtons = document.querySelectorAll('.scroll-btn');
+            scrollButtons.forEach(btn => {
+                const event = new Event('scroll');
+                const container = btn.closest('.editor-container, .output-container');
+                if (container) {
+                    const scrollableElement = container.querySelector('.CodeMirror-scroll, #output');
+                    if (scrollableElement) {
+                        scrollableElement.dispatchEvent(event);
+                    }
+                }
+            });
+        }, 200);
     }
 }
 
@@ -366,6 +530,49 @@ style.textContent = `
     font-weight: 500;
     z-index: 1000;
     pointer-events: none;
+}
+
+/* Scroll buttons */
+.scroll-btn {
+    position: absolute;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.scroll-btn.scroll-btn-top {
+    top: 10px;
+}
+
+.scroll-btn.scroll-btn-bottom {
+    bottom: 10px;
+}
+
+.editor-container .scroll-btn,
+.output-container .scroll-btn {
+    opacity: 0.8; /* Initially visible */
+}
+
+.editor-panel:hover .scroll-btn,
+.output-panel:hover .scroll-btn {
+    opacity: 0.8;
+}
+
+.editor-container, .output-container {
+    position: relative; /* Needed for absolute positioning of buttons */
+}
+
+/* Ensure CodeMirror scrollbars are handled correctly */
+.CodeMirror-scroll {
+    overflow: auto;
 }
 `;
 document.head.appendChild(style);
