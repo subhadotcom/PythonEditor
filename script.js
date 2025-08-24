@@ -7,25 +7,25 @@ class PythonCodeEditor {
     constructor() {
         this.isResizing = false;
         this.lastX = 0;
-        
+
         this.init();
     }
-    
+
     init() {
         this.setupResizer();
         this.setupEventListeners();
         this.setupKeyboardShortcuts();
         this.loadLayout();
-        
+
         // Show welcome message
         this.showWelcomeMessage();
     }
-    
+
     setupResizer() {
         const resizer = document.getElementById('resizer');
         const editorPanel = document.querySelector('.editor-panel');
         const outputPanel = document.querySelector('.output-panel');
-        
+
         // Add scroll buttons to panels
         this.addScrollButtons();
 
@@ -57,7 +57,7 @@ class PythonCodeEditor {
 
             e.preventDefault();
         });
-        
+
         document.addEventListener('mousemove', (e) => {
             if (!this.isResizing) return;
 
@@ -110,7 +110,7 @@ class PythonCodeEditor {
                 }
             }
         });
-        
+
         document.addEventListener('mouseup', () => {
             if (this.isResizing) {
                 this.isResizing = false;
@@ -127,7 +127,7 @@ class PythonCodeEditor {
             }
         });
     }
-    
+
     addScrollButtons() {
         // Add scroll buttons to editor
         const editorContainer = document.querySelector('.editor-container');
@@ -173,8 +173,8 @@ class PythonCodeEditor {
         container.appendChild(bottomBtn);
 
         // Show/hide buttons based on scroll position
-        const scrollableElement = type === 'output' ? 
-            document.getElementById('output') : 
+        const scrollableElement = type === 'output' ?
+            document.getElementById('output') :
             container.querySelector('.CodeMirror-scroll');
 
         const updateButtonVisibility = () => {
@@ -182,11 +182,11 @@ class PythonCodeEditor {
                 const editor = window.pythonEditor.getEditor();
                 const scrollInfo = editor.getScrollInfo();
                 topBtn.style.opacity = scrollInfo.top > 50 ? '0.8' : '0.3';
-                bottomBtn.style.opacity = 
+                bottomBtn.style.opacity =
                     scrollInfo.top < (scrollInfo.height - scrollInfo.clientHeight - 50) ? '0.8' : '0.3';
             } else if (type === 'output' && scrollableElement) {
                 const isAtTop = scrollableElement.scrollTop <= 50;
-                const isAtBottom = scrollableElement.scrollTop >= 
+                const isAtBottom = scrollableElement.scrollTop >=
                     (scrollableElement.scrollHeight - scrollableElement.clientHeight - 50);
                 topBtn.style.opacity = isAtTop ? '0.3' : '0.8';
                 bottomBtn.style.opacity = isAtBottom ? '0.3' : '0.8';
@@ -201,7 +201,7 @@ class PythonCodeEditor {
         // Initial visibility check
         setTimeout(updateButtonVisibility, 100);
     }
-    
+
     setupEventListeners() {
         // Run button
         document.getElementById('runBtn').addEventListener('click', () => {
@@ -209,14 +209,14 @@ class PythonCodeEditor {
                 window.pythonRunner.runCode();
             }
         });
-        
+
         // Clear output button
         document.getElementById('clearOutputBtn').addEventListener('click', () => {
             if (window.pythonRunner) {
                 window.pythonRunner.clearOutput();
             }
         });
-        
+
         // Window resize handler
         window.addEventListener('resize', () => {
             if (window.pythonEditor && window.pythonEditor.getEditor()) {
@@ -226,7 +226,7 @@ class PythonCodeEditor {
                 }, 100);
             }
         });
-        
+
         // Handle window close with unsaved changes
         window.addEventListener('beforeunload', (e) => {
             if (window.pythonEditor && window.pythonEditor.hasUnsavedChanges) {
@@ -235,30 +235,30 @@ class PythonCodeEditor {
                 return e.returnValue;
             }
         });
-        
+
         // Handle drag and drop for files
         this.setupDragAndDrop();
     }
-    
+
     setupDragAndDrop() {
         const container = document.querySelector('.container');
-        
+
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
             container.classList.add('drag-over');
         });
-        
+
         container.addEventListener('dragleave', (e) => {
             if (e.relatedTarget === null || !container.contains(e.relatedTarget)) {
                 container.classList.remove('drag-over');
             }
         });
-        
+
         container.addEventListener('drop', (e) => {
             e.preventDefault();
             container.classList.remove('drag-over');
-            
+
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
@@ -272,7 +272,7 @@ class PythonCodeEditor {
             }
         });
     }
-    
+
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             // Global shortcuts
@@ -284,21 +284,25 @@ class PythonCodeEditor {
                             window.pythonRunner.runCode();
                         }
                         break;
-                        
+
                     case '`':
                         e.preventDefault();
                         this.focusOutput();
                         break;
-                        
+
                     case '1':
                         e.preventDefault();
                         if (window.pythonEditor) {
                             window.pythonEditor.focus();
                         }
                         break;
+                    case 'n':
+                    case 'r':
+                        e.preventDefault();
+                        break;
                 }
             }
-            
+
             // Function keys
             switch (e.key) {
                 case 'F5':
@@ -307,14 +311,14 @@ class PythonCodeEditor {
                         window.pythonRunner.runCode();
                     }
                     break;
-                    
+
                 case 'F9':
                     e.preventDefault();
                     if (window.pythonEditor) {
                         window.pythonEditor.toggleTheme();
                     }
                     break;
-                    
+
                 case 'Escape':
                     // Clear focus from all elements
                     document.activeElement.blur();
@@ -322,13 +326,13 @@ class PythonCodeEditor {
             }
         });
     }
-    
+
     focusOutput() {
         const outputElement = document.getElementById('output');
         outputElement.focus();
         outputElement.scrollTop = outputElement.scrollHeight;
     }
-    
+
     saveLayout(editorFlex, outputFlex, isMobile = false) {
         try {
             const layoutKey = isMobile ? 'editor_layout_mobile' : 'editor_layout_desktop';
@@ -370,7 +374,7 @@ class PythonCodeEditor {
             console.warn('Could not load layout:', e);
         }
     }
-    
+
     showWelcomeMessage() {
         setTimeout(() => {
             if (window.pythonRunner && window.pythonRunner.isReady()) {
@@ -381,6 +385,7 @@ Keyboard Shortcuts:
 • Ctrl+Enter or F5: Run code
 • Ctrl+S: Save file
 • Ctrl+N: New file
+• Ctrl+R: Rename file
 • Ctrl+Space: Show autocomplete
 • Ctrl+/: Toggle comment
 • F9: Toggle theme
@@ -394,18 +399,18 @@ Features:
 
 Start coding in the editor panel!
                 `.trim();
-                
+
                 const outputElement = document.getElementById('output');
                 const welcomeDiv = document.createElement('div');
                 welcomeDiv.className = 'output-line system';
                 welcomeDiv.style.whiteSpace = 'pre-line';
                 welcomeDiv.textContent = welcomeMessage;
-                
+
                 outputElement.appendChild(welcomeDiv);
             }
         }, 2000);
     }
-    
+
     showNotification(message, type = 'info') {
         // Simple notification system
         const notification = document.createElement('div');
@@ -425,9 +430,9 @@ Start coding in the editor panel!
             max-width: 300px;
             animation: slideIn 0.3s ease-out;
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.style.animation = 'slideOut 0.3s ease-in forwards';
             setTimeout(() => {
@@ -435,7 +440,7 @@ Start coding in the editor panel!
             }, 300);
         }, 3000);
     }
-    
+
     // Handle responsive layout changes
     handleResponsiveLayout() {
         const isMobile = window.innerWidth <= 768;
@@ -580,12 +585,12 @@ document.head.appendChild(style);
 // Initialize main application
 document.addEventListener('DOMContentLoaded', () => {
     window.pythonCodeEditor = new PythonCodeEditor();
-    
+
     // Handle responsive layout changes
     window.addEventListener('resize', () => {
         window.pythonCodeEditor.handleResponsiveLayout();
     });
-    
+
     // Initial responsive check
     window.pythonCodeEditor.handleResponsiveLayout();
 });

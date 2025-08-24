@@ -202,6 +202,15 @@ class PythonEditor {
             this.loadFile(e.target.files[0]);
         });
         
+        document.getElementById('renameBtn').addEventListener('click', () => {
+            this.renameFile();
+        });
+        
+        // Make filename clickable for inline editing
+        document.getElementById('fileName').addEventListener('click', () => {
+            this.renameFileInline();
+        });
+        
         // Prevent default browser shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
@@ -292,6 +301,79 @@ class PythonEditor {
         const displayName = this.hasUnsavedChanges ? `${this.fileName} •` : this.fileName;
         document.getElementById('fileName').textContent = displayName;
         document.title = `${displayName} - Python Editor`;
+    }
+    
+    renameFile() {
+        const currentName = this.fileName;
+        const newName = prompt('Enter new filename:', currentName);
+        
+        if (newName && newName.trim() && newName !== currentName) {
+            const trimmedName = newName.trim();
+            
+            // Ensure .py extension if not present
+            const finalName = trimmedName.endsWith('.py') ? trimmedName : trimmedName + '.py';
+            
+            this.fileName = finalName;
+            this.hasUnsavedChanges = true;
+            this.updateFileName();
+            this.updateStatus(`File renamed to ${this.fileName}`);
+            this.saveToStorage();
+        }
+    }
+    
+    renameFileInline() {
+        const fileNameElement = document.getElementById('fileName');
+        const currentName = this.fileName.replace(' •', ''); // Remove unsaved indicator
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentName;
+        input.className = 'inline-rename-input';
+        input.style.cssText = `
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent-primary);
+            color: var(--text-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            width: 150px;
+            outline: none;
+        `;
+        
+        // Replace filename with input
+        fileNameElement.style.display = 'none';
+        fileNameElement.parentNode.insertBefore(input, fileNameElement.nextSibling);
+        input.focus();
+        input.select();
+        
+        const finishRename = () => {
+            const newName = input.value.trim();
+            input.remove();
+            fileNameElement.style.display = 'inline';
+            
+            if (newName && newName !== currentName) {
+                // Ensure .py extension if not present
+                const finalName = newName.endsWith('.py') ? newName : newName + '.py';
+                
+                this.fileName = finalName;
+                this.hasUnsavedChanges = true;
+                this.updateFileName();
+                this.updateStatus(`File renamed to ${this.fileName}`);
+                this.saveToStorage();
+            }
+        };
+        
+        input.addEventListener('blur', finishRename);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                finishRename();
+            } else if (e.key === 'Escape') {
+                input.remove();
+                fileNameElement.style.display = 'inline';
+            }
+        });
     }
     
     updateStatus(message) {
